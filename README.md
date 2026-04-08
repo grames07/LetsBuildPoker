@@ -1,2 +1,4 @@
 # LetsBuildPoker
-Building poker for final project
+
+Kevin and Grady plan to build a working poker game that 
+
