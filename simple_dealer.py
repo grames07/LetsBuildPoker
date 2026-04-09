@@ -9,3 +9,5 @@ for suit in suits:
 
 print(deck)
 
+for player in number_of_players: #need to figure out how to define number of players
+    player_hand = 
