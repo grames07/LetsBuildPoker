@@ -11,22 +11,42 @@ moves = ['rock','paper','scissors']
 
 def main(): #this function will contain a single round of poker
     print('## Welcome to POKER! ##')
-    moves = ['rock','paper','scissors']
-    cwin_counter = 0
-    swin_counter = 0
-    match_counter = 0
-    # print(f'DEBUG: The secret number is {secret}')
-    with create_new_socket() as s:
-        s.connect(HOST, PORT)
 
-        while True:   # our game loop
 
-            # Grab the player's guess
-            while True:
-                    client_move = player_choice()
-                    s.sendall(str(client_move))
-                    server_move = s.recv()
-                    break
+###########################################################################################################
+###########################################################################################################
+
+    # create a deck of cards to be used for the game
+    suits = ["Hearts", "Diamonds", "Clubs", "Spades"]
+    numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
+    deck = []
+
+    for suit in suits:
+        for number in numbers:
+            card = number + " of " + suit
+            deck.append(card)
+
+
+    # deal to the server
+    server_card_1 = random.choice(deck)
+    deck.remove(server_card_1)
+    server_card_2 = random.choice(deck)
+    deck.remove(server_card_2)
+    server_hand = server_card_1, server_card_2
+    server_hand_message=f"Your hand: {server_hand}"
+    s.sendall(str(server_hand_message))
+
+    # deal to the client
+    client_card_1 = random.choice(deck)
+    deck.remove(client_card_1)
+    client_card_2 = random.choice(deck)
+    deck.remove(client_card_2)
+    client_hand = client_card_1, client_card_2
+    client_hand_message=f"Your hand: {client_hand}"
+    print(client_hand_message)
+
+    # deal the flop
+    flop = 
 
 ###################################################################################################################
 ################################################################################################################
