@@ -46,8 +46,13 @@ def main(): #this function will contain a single round of poker
     print(client_hand_message)
 
     # deal the flop
-    flop = 
-
+    flop = random.sample(deck, 3)
+    for card in flop:
+        deck.remove(card)
+    flop_message = f"The flop: {flop}"
+    s.sendall(str(flop_message))
+    print(flop_message)
+    
 ###################################################################################################################
 ################################################################################################################
             #CREATING A MESSAGE TO BE DISPLAYED AT SERVER
