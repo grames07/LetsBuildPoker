@@ -69,7 +69,7 @@ def main(): # this function will contain a single round of poker
         print(f"You raised: {client_raise}")
 
     # server pre-flop action
-    s.sendall
+    s.sendall(str('Enter your move (fold, check, raise): '))
 
 
 
