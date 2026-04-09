@@ -9,14 +9,14 @@ for suit in suits:
         card = number + " of " + suit
         deck.append(card)
 
-number_of_players = 4
+players = ["John", "James", "Jack", "Jodie"]
 
-for player in number_of_players: #need to figure out how to define number of players
+for player in range(len(players)): #need to figure out how to define number of players
     player_card_1 = random.choice(deck)
     deck.remove(player_card_1)
     player_card_2 = random.choice(deck)
     deck.remove(player_card_2)
     player_hand = player_card_1, player_card_2
-    print(player_hand)
+    print(f"{players[player]}'s hand: {player_hand}")
 
 
