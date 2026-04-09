@@ -11,7 +11,7 @@ server_bank_account = 1000
 
 
 
-def main(): #this function will contain a single round of poker
+def main(): # this function will contain a single round of poker
     print('## Welcome to POKER! ##')
 
     with create_new_socket() as s:
@@ -30,6 +30,7 @@ def main(): #this function will contain a single round of poker
             card = number + " of " + suit
             deck.append(card)
 
+    current_pot = 0
 
     # deal to the server
     server_card_1 = random.choice(deck)
@@ -48,6 +49,36 @@ def main(): #this function will contain a single round of poker
     client_hand = client_card_1, client_card_2
     client_hand_message=f"Your hand: {client_hand}"
     print(client_hand_message)
+
+
+    # client pre-flop action
+    client_preflop = int(input('Enter your move (fold, check, raise): '))
+    if client_preflop == 'fold':
+        print('You folded. Round over.')
+        return
+    elif client_preflop == 'check':
+        print('You checked.')
+    elif client_preflop == 'raise':
+        client_raise = int(input('Enter your raise amount: '))
+        if client_raise > client_bank_account:
+            print('You cannot bet more than your bank account. Please try again.')
+            return
+        else:
+            client_bank_account -= client_raise
+            current_pot += client_raise
+        print(f"You raised: {client_raise}")
+
+    # server pre-flop action
+    s.sendall
+
+
+
+
+
+
+    server_bet =
+    print(f"Server bets: {server_bet}")
+
 
     # deal the flop
     flop = random.sample(deck, 3)
