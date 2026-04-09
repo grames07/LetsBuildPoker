@@ -7,19 +7,10 @@ PORT = 65444        # The port used by the server
 
 moves = ['rock','paper','scissors']
 
-def player_choice():
-    #DEFINE SOME FUNCTION HERE THAT ASKS A PLAYER FOR THEIR HAND CHOICE, ERROR CHECKS THE INPUT, AND RETURNS THE PLAYER'S CHOICE
-    while True:
-        moves = ['rock','paper','scissors']
-        player_move = input('Please pick your shape: ').lower()
-        if player_move in moves:
-            return player_move
-        else:
-            print('Shape must be rock, paper, or scissors. Try again...')
 
 
-def main():
-    print('## Welcome to GUESS THE NUMBER! ##')
+def main(): #this function will contain a single round of poker
+    print('## Welcome to POKER! ##')
     moves = ['rock','paper','scissors']
     cwin_counter = 0
     swin_counter = 0
