@@ -137,10 +137,10 @@ def player_action(bank, current_bet=0):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    client_bank = 1000   # Player 1 (client) starts with $1000
-    server_bank = 1000   # Player 2 (server) starts with $1000
-    SMALL_BLIND = 25     # small blind posted by Player 2 each round
-    BIG_BLIND   = 50     # big blind posted by Player 1 each round
+    client_bank = 20   # Player 1 (client) starts with $20
+    server_bank = 20   # Player 2 (server) starts with $20
+    SMALL_BLIND = .25     # small blind posted by Player 2 each round
+    BIG_BLIND   = .50     # big blind posted by Player 1 each round
 
     print('## Welcome to POKER! ##')
 
