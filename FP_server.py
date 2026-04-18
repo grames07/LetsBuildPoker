@@ -1,6 +1,6 @@
 #import socket32, which allows us to connect servers and clients
 from socket32 import create_new_socket
-import pset3_client as rlib
+import FP_client as rlib
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 65444        # The port used by the server
