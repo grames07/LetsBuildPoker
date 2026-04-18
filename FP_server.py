@@ -1,5 +1,5 @@
 from socket32 import create_new_socket   # import our custom socket library
-import MY_client as rlib                  # reuse player_action() from the client file
+import FP_client as rlib                  # reuse player_action() from the client file
 
 HOST = '127.0.0.1'   # the IP address to bind the server to (localhost)
 PORT = 65444          # the port the server will listen on
