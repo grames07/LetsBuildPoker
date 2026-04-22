@@ -57,23 +57,45 @@ def evaluate_five_card_hand(cards):
 
     is_straight = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*values[0]-10) and not is_straight_flush and not is_royal_flush
 
-    is_three_of_kind = len(set(values)) == 3 and (values.count(values[0]) == 3 or values.count(values[2]) == 3 or values.count(values[4]) == 3)  # 3 unique values, one appearing 3 times (e.g. [A,A,A,K,Q])
+    is_three_of_kind = len(set(values)) == 3 and (values.count(values[0]) == 3 or values.count(values[2]) == 3 or values.count(values[4]) == 3)  # 3 unique values, one appearing 3 times
 
-    is_two_pair = len(set(values)) == 3 and not is_three_of_kind  # 3 unique values but no triple must be two pair (e.g. [A,A,K,K,Q])
+    is_two_pair = len(set(values)) == 3 and not is_three_of_kind  # 3 unique values but no triple must be two pair
 
-    is_one_pair = len(set(values)) == 4  # exactly 4 unique values means one pair (e.g. [A,A,K,Q,J])
+    is_one_pair = len(set(values)) == 4  # exactly 4 unique values means one pair
 
-    is_high_card = not is_royal_flush and not is_straight_flush and not is_four_of_kind and not is_full_house and not is_flush and not is_straight and not is_three_of_kind and not is_two_pair and not is_one_pair
-
-
-    value_count = Counter(values) # count occurrences of each value
-    counts = sorted(value_count.values(), reverse=True) # e.g. [3,2] = full house sort by frequency first, then by value — used for tiebreakers
-    groups = sorted(value_count.keys(), key=lambda x: (value_count[x], x), reverse=True) # e.g. [10, 7] = three 10s and two 7s, so 10 is the first tiebreaker, then 7
-
+    # assign a rank integer to this hand based on the highest-ranking criteria met
+    if is_royal_flush:
+        return (9, values)
+    elif is_straight_flush:
+        return (8, values)
+    elif is_four_of_kind:
+        return (7, values)
+    elif is_full_house:
+        return (6, values)
+    elif is_flush:
+        return (5, values)
+    elif is_straight:
+        return (4, values)
+    elif is_three_of_kind:
+        return (3, values)
+    elif is_two_pair:
+        return (2, values)
+    elif is_one_pair:
+        return (1, values)
+    else:
+        return (0, values)
 
 
 def best_hand_rank(hole_cards, community_cards): #use the evaluate_five_card_hand function to find the best 5-card hand from the 7 available cards (2 hole + 5 community)
+    pass
 
+def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted card values]) - need to compare ranks, than deal with tiebreakers
+    if hand1[0] > hand2[0]:   # compare rank integers first
+        return 1
+    elif hand2[0] > hand1[0]:
+        return -1
+    else:
+        #help me out here!
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PLAYER INPUT
@@ -347,8 +369,8 @@ def main():
             # ── Showdown — evaluate both hands and award pot ──────────────────
             c_rank = best_hand_rank(client_hand, community)   # best 5-card rank for Player 1
             s_rank = best_hand_rank(server_hand, community)   # best 5-card rank for Player 2
-            c_name = HAND_NAMES[c_rank[0]]   # human-readable name for Player 1's hand
-            s_name = HAND_NAMES[s_rank[0]]   # human-readable name for Player 2's hand
+            c_name = possible_hands[c_rank[0]]   # human-readable name for Player 1's hand
+            s_name = possible_hands[s_rank[0]]   # human-readable name for Player 2's hand
 
             # reveal all cards and hand rankings to both players
             display(f'── SHOWDOWN ──')
