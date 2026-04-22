@@ -90,11 +90,40 @@ def best_hand_rank(hole_cards, community_cards): #use the evaluate_five_card_han
     pass
 
 def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted card values]) - need to compare ranks, than deal with tiebreakers
+   hand1_wins = 1
+   hand2_wins = -1
+   tie = 0
+
     if hand1[0] > hand2[0]:   # compare rank integers first
-        return 1
+        return hand1_wins
     elif hand2[0] > hand1[0]:
-        return -1
+        return hand2_wins
+    elif hand1[0] == hand2[0]: #case where hand int are the same
+        if hand1[0] == 0: # high card tie
+            if hand1[1][1] > hand2[1][1]:
+                return hand1_wins
+            elif hand2[1][1] > hand1[1][1]:
+                return hand2_wins
+            else:
+                for i in range(1,5): 
+                    if hand1[1][i] > hand2[1][i]:
+                        return hand1_wins
+                    elif hand2[1][i] > hand1[1][i]:
+                        return hand2_wins
+        elif hand1[0] == 1: #one pair tie - compare the value of the pair first, then the kickers in order
+            if hand1[1][0] > hand2[1][0]: #compare the value of the pair
+                return hand1_wins
+            elif hand2[1][0] > hand1[1][0]:
+                return hand2_wins
+            else: #if pairs are the same, compare kickers in order
+                for i in range(1,5):
+                    if hand1[1][i] > hand2[1][i]:
+                        return hand1_wins
+                    elif hand2[1][i] > hand1[1][i]:
+                        return hand2_wins
+
     else:
+       return tie
         #help me out here!
 
 # ─────────────────────────────────────────────────────────────────────────────
