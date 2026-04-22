@@ -48,8 +48,7 @@ def evaluate_five_card_hand(cards):
     is_straight = (len(set(values)) == 5) and (values[0] - values[4] == 4)
 
     value_count = Counter(values) # count occurrences of each value
-    counts = sorted(value_count.values(), reverse=True)          # e.g. [3,2] = full house
-    # sort by frequency first, then by value — used for tiebreakers
+    counts = sorted(value_count.values(), reverse=True) # e.g. [3,2] = full house sort by frequency first, then by value — used for tiebreakers
     groups = sorted(value_count.keys(), key=lambda x: (value_count[x], x), reverse=True) # e.g. [10, 7] = three 10s and two 7s, so 10 is the first tiebreaker, then 7
 
     # return (rank, tiebreaker) — Python compares tuples element by element
