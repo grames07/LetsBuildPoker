@@ -37,38 +37,31 @@ HAND_NAMES = {0: "High Card", 1: "One Pair", 2: "Two Pair", 3: "Three of a Kind"
 
 
 def evaluate_five_card_hand(cards):
-    """Evaluate a 5-card poker hand.
-    Returns (rank_int, tiebreaker_list) — higher tuple means better hand."""
 
     # get numeric values of all 5 cards sorted highest to lowest
-    vals  = sorted([get_card_value(c) for c in cards], reverse=True) # get value of each card, e.g. "Jack" → 11, sorted high to low
+    values  = sorted([get_card_value(c) for c in cards], reverse=True) # get value of each card, e.g. "Jack" → 11, sorted high to low
     suits = [get_card_suit(c) for c in cards]   # get suit of each card
 
     # a flush is when all 5 cards share the same suit
     is_flush    = len(set(suits)) == 1
     # a straight is 5 consecutive values with no duplicates
-    is_straight = (len(set(vals)) == 5) and (vals[0] - vals[4] == 4)
+    is_straight = (len(set(values)) == 5) and (values[0] - values[4] == 4)
 
-    # special case: A-2-3-4-5 "wheel" straight (ace plays low)
-    if set(vals) == {14, 2, 3, 4, 5}:
-        is_straight = True
-        vals        = [5, 4, 3, 2, 1]   # re-order so ace is treated as 1
-
-    vc     = Counter(vals)                              # count occurrences of each value
-    counts = sorted(vc.values(), reverse=True)          # e.g. [3,2] = full house
+    value_count = Counter(values) # count occurrences of each value
+    counts = sorted(value_count.values(), reverse=True)          # e.g. [3,2] = full house
     # sort by frequency first, then by value — used for tiebreakers
-    groups = sorted(vc.keys(), key=lambda x: (vc[x], x), reverse=True)
+    groups = sorted(value_count.keys(), key=lambda x: (value_count[x], x), reverse=True) # e.g. [10, 7] = three 10s and two 7s, so 10 is the first tiebreaker, then 7
 
     # return (rank, tiebreaker) — Python compares tuples element by element
-    if   is_straight and is_flush: return (8, vals)   # straight flush
+    if   is_straight and is_flush: return (8, values)   # straight flush
     elif counts[0] == 4:           return (7, groups) # four of a kind
     elif counts == [3, 2]:         return (6, groups) # full house
-    elif is_flush:                 return (5, vals)   # flush
-    elif is_straight:              return (4, vals)   # straight
+    elif is_flush:                 return (5, values)   # flush
+    elif is_straight:              return (4, values)   # straight
     elif counts[0] == 3:           return (3, groups) # three of a kind
     elif counts[:2] == [2, 2]:     return (2, groups) # two pair
     elif counts[0] == 2:           return (1, groups) # one pair
-    else:                          return (0, vals)   # high card
+    else:                          return (0, values)   # high card
 
 
 def best_hand_rank(hole_cards, community_cards):
@@ -78,9 +71,8 @@ def best_hand_rank(hole_cards, community_cards):
     return max(evaluate_five_card_hand(list(combo))
                for combo in combinations(all_cards, 5))    # evaluate all 5-card combos
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# PLAYER INPUT — also imported by the server as rlib.player_action()
+# PLAYER INPUT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def player_action(bank, current_bet=0):
