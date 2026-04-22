@@ -33,13 +33,13 @@ def get_card_suit(card):
 # ─────────────────────────────────────────────────────────────────────────────
 
 # maps hand rank integers to human-readable names
-HAND_NAMES = {0: "High Card", 1: "One Pair", 2: "Two Pair", 3: "Three of a Kind", 4: "Straight", 5: "Flush", 6: "Full House", 7: "Four of a Kind", 8: "Straight Flush", 9: "Royal Flush"}
+possible_hands = {0: "High Card", 1: "One Pair", 2: "Two Pair", 3: "Three of a Kind", 4: "Straight", 5: "Flush", 6: "Full House", 7: "Four of a Kind", 8: "Straight Flush", 9: "Royal Flush"}
 
 
 def evaluate_five_card_hand(cards):
 
     # get numeric values of all 5 cards sorted highest to lowest
-    values  = sorted([get_card_value(c) for c in cards], reverse=True) # get value of each card, e.g. "Jack" → 11, sorted high to low
+    values= sorted([get_card_value(c) for c in cards], reverse=True) # get value of each card, e.g. "Jack" → 11, sorted high to low
     suits = [get_card_suit(c) for c in cards]   # get suit of each card
 
 
@@ -47,24 +47,23 @@ def evaluate_five_card_hand(cards):
 
     is_royal_flush = values == [14, 13, 12, 11, 10] and len(set(suits)) == 1
 
-    is_straight_flush = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*(values[0])-10) and len(set(suits)) == 1 and not is_royal_flush # 5 consecutive values, all same suit, but not royal flush
+    is_straight_flush = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*values[0]-10) and len(set(suits)) == 1 and not is_royal_flush
 
-    is_four_of_kind = len(set(values)) == 2 and (values.count(values[0]) == 4 or values.count(values[1]) == 4) # if there are only 2 unique values and one of them occurs 4 times, it's four of a kind
+    is_four_of_kind = len(set(values)) == 2 and (values.count(values[0]) == 4 or values.count(values[1]) == 4)
 
-    is_full_house = len(set(values)) == 2 and values.count(values[0]) == 3 and values.count(values[1]) == 2 or values.count(values[1]) == 3 and values.count(values[0]) == 2 # if there are only 2 unique values and one occurs 3 times and the other occurs 2 times, it's a full house
+    is_full_house = len(set(values)) == 2 and not is_four_of_kind  # if only 2 unique values and not four of a kind, must be full house
 
-    is_flush = len(set(suits)) == 1 and not is_royal_flush and not is_straight_flush # all suits the same but not straight flush or royal flush
+    is_flush = len(set(suits)) == 1 and not is_royal_flush and not is_straight_flush
 
-    is_straight = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*(values[0])-10) # sum of 5 consecutive numbers is 5 times the highest minus 10 (e.g. 10+9+8+7+6 = 5*10-10)
+    is_straight = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*values[0]-10) and not is_straight_flush and not is_royal_flush
 
-    is_three_of_kind = len(set(values)) == 3 and not is_full_house and not is_four_of_kind # if there are 3 unique values and it's not a full house or four of a kind, it must be three of a kind
+    is_three_of_kind = len(set(values)) == 3 and (values.count(values[0]) == 3 or values.count(values[2]) == 3 or values.count(values[4]) == 3)  # 3 unique values, one appearing 3 times (e.g. [A,A,A,K,Q])
 
-    is_two_pair = len(set(values)) == 3 and not is_three_of_kind and not is_full_house and not is_four_of_kind # if there are 3 unique values and it's not three of a kind, full house, or four of a kind, it must be two pair
+    is_two_pair = len(set(values)) == 3 and not is_three_of_kind  # 3 unique values but no triple must be two pair (e.g. [A,A,K,K,Q])
 
-    is_one_pair = len(set(values)) == 4 and not is_two_pair and not is_three_of_kind and not is_full_house and not is_four_of_kind # if there are 4 unique values and it's not two pair, three of a kind, full house, or four of a kind, it must be one pair
+    is_one_pair = len(set(values)) == 4  # exactly 4 unique values means one pair (e.g. [A,A,K,Q,J])
 
-    is_high_card = not is_royal_flush and not is_straight_flush and not is_four_of_kind and not is_full_house and not is_flush and not is_straight and not is_three_of_kind and not is_two_pair # if it's none of the above, it's just a high card hand
-
+    is_high_card = not is_royal_flush and not is_straight_flush and not is_four_of_kind and not is_full_house and not is_flush and not is_straight and not is_three_of_kind and not is_two_pair and not is_one_pair
 
 
     value_count = Counter(values) # count occurrences of each value
