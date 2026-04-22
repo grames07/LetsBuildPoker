@@ -59,7 +59,9 @@ def evaluate_five_card_hand(cards):
 
     is_three_of_kind = len(set(values)) == 3 and not is_full_house and not is_four_of_kind # if there are 3 unique values and it's not a full house or four of a kind, it must be three of a kind
 
-    is_two_pair = len(set(values)) == 4 and not is_three_of_kind and not is_full_house and not is_four_of_kind # if there are 4 unique values and it's not three of a kind, full house, or four of a kind, it must be two pair
+    is_two_pair = len(set(values)) == 3 and not is_three_of_kind and not is_full_house and not is_four_of_kind # if there are 3 unique values and it's not three of a kind, full house, or four of a kind, it must be two pair
+
+    is_one_pair = len(set(values)) == 4 and not is_two_pair and not is_three_of_kind and not is_full_house and not is_four_of_kind # if there are 4 unique values and it's not two pair, three of a kind, full house, or four of a kind, it must be one pair
 
     is_high_card = not is_royal_flush and not is_straight_flush and not is_four_of_kind and not is_full_house and not is_flush and not is_straight and not is_three_of_kind and not is_two_pair # if it's none of the above, it's just a high card hand
 
