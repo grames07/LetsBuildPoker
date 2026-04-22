@@ -43,12 +43,27 @@ def evaluate_five_card_hand(cards):
     suits = [get_card_suit(c) for c in cards]   # get suit of each card
 
 
-    # determine hand rank
-    is_royal = values == [14, 13, 12, 11, 10] and len(set(suits)) == 1
-    # a flush is when all 5 cards share the same suit
+    # determine hand rank using boulians (they are "true" if the criteria is met)
+
+    is_royal_flush = values == [14, 13, 12, 11, 10] and len(set(suits)) == 1
+
+    is_straight_flush = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*(values[0])-10) and len(set(suits)) == 1
+
+    is_four_of_kind = len(set(values)) == 2
+
+    is_full_house = len(set(values)) == 2 and 
+
     is_flush = len(set(suits)) == 1
-    # a straight is 5 consecutive values with no duplicates
+
     is_straight = (len(set(values)) == 5) and (values[0]+values[1]+values[2]+values[3]+values[4] == 5*(values[0])-10) # sum of 5 consecutive numbers is 5 times the highest minus 10 (e.g. 10+9+8+7+6 = 5*10-10)
+
+    is_three_of_kind = len(set(values)) == 3
+
+    is_two_pair = len(set(values)) == 4
+
+    is_high_card = True
+
+
 
     value_count = Counter(values) # count occurrences of each value
     counts = sorted(value_count.values(), reverse=True) # e.g. [3,2] = full house sort by frequency first, then by value — used for tiebreakers
