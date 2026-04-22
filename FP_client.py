@@ -44,7 +44,7 @@ def evaluate_five_card_hand(cards):
 
 
     # determine hand rank
-    is_royal = values == [14, 13, 12, 11, 10] and len(set(suits)) == 1   # royal flush is Ace high straight flush
+    is_royal = values == [14, 13, 12, 11, 10] and len(set(suits)) == 1
     # a flush is when all 5 cards share the same suit
     is_flush = len(set(suits)) == 1
     # a straight is 5 consecutive values with no duplicates
@@ -54,24 +54,10 @@ def evaluate_five_card_hand(cards):
     counts = sorted(value_count.values(), reverse=True) # e.g. [3,2] = full house sort by frequency first, then by value — used for tiebreakers
     groups = sorted(value_count.keys(), key=lambda x: (value_count[x], x), reverse=True) # e.g. [10, 7] = three 10s and two 7s, so 10 is the first tiebreaker, then 7
 
-    # return (rank, tiebreaker) — Python compares tuples element by element
-    if   is_straight and is_flush: return (8, values)   # straight flush
-    elif counts[0] == 4:           return (7, groups) # four of a kind
-    elif counts == [3, 2]:         return (6, groups) # full house
-    elif is_flush:                 return (5, values)   # flush
-    elif is_straight:              return (4, values)   # straight
-    elif counts[0] == 3:           return (3, groups) # three of a kind
-    elif counts[:2] == [2, 2]:     return (2, groups) # two pair
-    elif counts[0] == 2:           return (1, groups) # one pair
-    else:                          return (0, values)   # high card
 
 
-def best_hand_rank(hole_cards, community_cards):
-    """Find the best 5-card hand rank from all 7 available cards.
-    Tries every possible 5-card combination and returns the best one."""
-    all_cards = list(hole_cards) + list(community_cards)   # combine all available cards
-    return max(evaluate_five_card_hand(list(combo))
-               for combo in combinations(all_cards, 5))    # evaluate all 5-card combos
+def best_hand_rank(hole_cards, community_cards): #use the evaluate_five_card_hand function to find the best 5-card hand from the 7 available cards (2 hole + 5 community)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PLAYER INPUT
