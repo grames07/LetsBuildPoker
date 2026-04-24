@@ -12,5 +12,5 @@ We were having trouble with the best_hand_rank function, because it requires us 
 
 The other troubling codeblock was the comparing two hands. If the hand ranks are different, this is quite simple. However, if the hand ranks are the same and we need to compare which is better it gets more difficult. To compare these, we wrote preliminary code for the easier cases (ranks 0, 4, 5, 8, 9), then had Claude use the same methodology for completing the other comparisons.
 
-
+The functions in the betting parts of this are relatively straightforward to understand, and don't contain any additional functionalities that we weren't taught in class.
 
