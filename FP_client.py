@@ -330,6 +330,13 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
 # BETTING FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
+#initialize values for blinds and player banks at the start of the game, these could be changed
+big_blind = .50
+small_blind = .25
+player1_bank = 20.00
+player2_bank = 20.00
+pot = 0.00   # the pot starts empty at the beginning of the game
+
 def format_money(amount):
     """Format a money amount nicely for display.
     Whole numbers show as $10, decimals show as $10.50"""
