@@ -135,14 +135,12 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
     if rank == 9:
         return tie   # two royal flushes are always a tie — only one exists per suit
 
-    # ── Straight Flush (rank 8) or Straight (rank 4) ──────────────────────────
-    elif rank == 8 or rank == 4:
-        # the hand with the highest top card wins
-        if v1[0] > v2[0]:
-            return hand1_wins
-        elif v2[0] > v1[0]:
-            return hand2_wins
-        return tie   # identical straights — split the pot
+    # ── Straight Flush (rank 8) ───────────────────────────────────────────────
+    elif rank == 8:
+        # the straight flush with the highest top card wins
+        if v1[0] > v2[0]: return hand1_wins
+        if v2[0] > v1[0]: return hand2_wins
+        return tie   # identical straight flushes — split the pot
 
     # ── Four of a Kind (rank 7) ───────────────────────────────────────────────
     elif rank == 7:
@@ -204,13 +202,20 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
         if pair2 > pair1: return hand2_wins
         return tie
 
-    # ── Flush (rank 5) or High Card (rank 0) ──────────────────────────────────
-    elif rank == 5 or rank == 0:
+    # ── Flush (rank 5) ────────────────────────────────────────────────────────
+    elif rank == 5:
         # compare all 5 cards from highest to lowest until one hand wins
-        for i in range(5):   # IMPORTANT: range(5) starts at 0 — must include the highest card!
+        for i in range(5):   # range(5) gives us indexes 0,1,2,3,4 — index 0 is the highest card
             if v1[i] > v2[i]: return hand1_wins
             if v2[i] > v1[i]: return hand2_wins
         return tie   # every card matched — split the pot
+
+    # ── Straight (rank 4) ─────────────────────────────────────────────────────
+    elif rank == 4:
+        # the straight with the highest top card wins
+        if v1[0] > v2[0]: return hand1_wins
+        if v2[0] > v1[0]: return hand2_wins
+        return tie   # identical straights — split the pot
 
     # ── Three of a Kind (rank 3) ──────────────────────────────────────────────
     elif rank == 3:
@@ -308,4 +313,106 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
             if kickers2[i] > kickers1[i]: return hand2_wins
         return tie
 
+    # ── High Card (rank 0) ────────────────────────────────────────────────────
+    elif rank == 0:
+        # neither player has any matching cards — just compare all 5 cards one by one
+        # the player with the single highest card wins, working down through all 5 if needed
+        for i in range(5):   # range(5) gives us indexes 0,1,2,3,4 — index 0 is the highest card
+            if v1[i] > v2[i]: return hand1_wins   # hand 1's card at this position is higher
+            if v2[i] > v1[i]: return hand2_wins   # hand 2's card at this position is higher
+            # if they are equal, the loop continues to the next card down
+        return tie   # all 5 cards were identical — split the pot
+
     return tie   # fallback safety net — should never actually be reached
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BETTING FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def fmt(amount):
+    """Format a money amount nicely for display.
+    Whole numbers show as $10, decimals show as $10.50"""
+    if amount == int(amount):      # check if the amount has no decimal part
+        return f'${int(amount)}'   # display as a whole number e.g. $100
+    else:
+        return f'${amount:.2f}'    # display with 2 decimal places e.g. $10.50
+
+
+def post_blinds(player1_bank, player2_bank, small_blind, big_blind):
+    """Deduct the blinds from each player's bank at the start of a hand.
+    Player 1 always posts the big blind, Player 2 always posts the small blind.
+    Returns the updated banks and the starting pot."""
+
+    player1_bank -= big_blind               # deduct big blind from Player 1's bank
+    player2_bank -= small_blind             # deduct small blind from Player 2's bank
+    pot           = big_blind + small_blind   # the pot starts with both blinds combined
+
+    # display the blind information so both players can see what was posted
+    print(f'  Blinds — Player 1: {fmt(big_blind)} (big)  |  Player 2: {fmt(small_blind)} (small)  |  Pot: {fmt(pot)}')
+
+    return player1_bank, player2_bank, pot   # send the updated values back to the game
+
+
+def player_action(bank, current_bet=0):
+    """Ask the current player what they want to do.
+    If current_bet is 0, the player can fold, check, or raise.
+    If current_bet is greater than 0, the player must fold, call, or raise.
+    Returns the player's chosen action and the dollar amount (0 if no money involved)."""
+
+    # decide which options to show based on whether there is a bet to match
+    if current_bet == 0:
+        options = ['fold', 'check', 'raise']              # no bet on the table — can check
+        prompt  = '  Your move (fold / check / raise): '
+    else:
+        options = ['fold', 'call', 'raise']               # bet on the table — must call or raise to stay in
+        prompt  = f'  Your move (fold / call {fmt(current_bet)} / raise): '
+
+    while True:   # keep asking until the player gives a valid answer
+        move = input(prompt).strip().lower()   # read the player's input, remove extra spaces, make lowercase
+
+        if move not in options:
+            print(f'  Invalid choice. Please choose: {" / ".join(options)}')   # remind them of valid options
+            continue   # go back to the top of the loop and ask again
+
+        if move == 'raise':
+            while True:   # keep asking until the player gives a valid raise amount
+                try:
+                    amount = float(input('  Raise amount: $'))   # read the raise amount as a number
+                    if amount <= 0:
+                        print('  Raise amount must be more than zero. Try again.')   # must bet at least something
+                    elif amount > bank:
+                        print(f'  You only have {fmt(bank)}. You cannot bet more than that.')   # can't bet more than you have
+                    else:
+                        return 'raise', amount   # valid raise — return the action and amount
+                except ValueError:
+                    print('  Please type a number.')   # they typed something that isn't a number
+
+        elif move == 'call':
+            actual_call = min(current_bet, bank)   # can't call more than the player actually has (all-in protection)
+            return 'call', actual_call             # return the call action and the capped amount
+
+        else:
+            return move, 0   # fold or check — no money changes hands so amount is 0
+
+
+def award_pot(pot, player1_bank, player2_bank, winner):
+    """Give the pot to the winner and display the result.
+    winner should be 'player1', 'player2', or 'tie'.
+    Returns the updated player banks."""
+
+    if winner == 'player1':
+        player1_bank += pot   # add the whole pot to Player 1's bank
+        print(f'  Player 1 wins the pot of {fmt(pot)}!')
+
+    elif winner == 'player2':
+        player2_bank += pot   # add the whole pot to Player 2's bank
+        print(f'  Player 2 wins the pot of {fmt(pot)}!')
+
+    else:   # tie — split the pot evenly between both players
+        split         = pot / 2          # divide the pot in half
+        player1_bank += split            # give each player their half
+        player2_bank += split
+        print(f'  Tie! The pot is split — each player receives {fmt(split)}.')
+
+    return player1_bank, player2_bank   # send the updated banks back to the game
