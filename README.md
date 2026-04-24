@@ -3,4 +3,6 @@
 Kevin and Grady plan to build a networked poker game that allows a player to play poker with other players.
 
 FP Status:
-For this update, we have completed 
+For this update, we have completed the functions that we indend to call for our project
+
+We wrote the following functions:
