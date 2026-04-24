@@ -1,7 +1,6 @@
 from socket32 import create_new_socket   # import our custom socket library
 import random                             # used to shuffle the deck
-from itertools import combinations        # used to find best 5-card hand from 7 cards
-from collections import Counter           # used to count card values for hand evaluation
+
 
 HOST = '127.0.0.1'   # the server's IP address (localhost)
 PORT = 65444          # the port the server is listening on
@@ -87,7 +86,7 @@ def evaluate_five_card_hand(cards):
 
 
 def best_hand_rank(hole_cards, community_cards): #use the evaluate_five_card_hand function to find the best 5-card hand from the 7 available cards (2 hole + 5 community)
-    pass
+    #need help here! I want to generate all combinations of 5 cards from the 7 available, evaluate each one, and return the highest rank
 
 def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted card values]) - need to compare ranks, than deal with tiebreakers
     hand1_wins = 1
@@ -110,6 +109,8 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
                     return hand1_wins
                 elif hand2[1][i] > hand1[1][i]:
                     return hand2_wins
+
+    #need to finish this?
 
 
 
