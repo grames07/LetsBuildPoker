@@ -327,15 +327,19 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BETTING FUNCTIONS
+# GAME VALUES — change these to adjust the game before running
 # ─────────────────────────────────────────────────────────────────────────────
 
-#initialize values for blinds and player banks at the start of the game, these could be changed
-big_blind = .50
-small_blind = .25
-player1_bank = 20.00
-player2_bank = 20.00
-pot = 0.00   # the pot starts empty at the beginning of the game
+big_blind    = 0.50    # the big blind amount — Player 1 posts this every round
+small_blind  = 0.25    # the small blind amount — Player 2 posts this every round
+player1_bank = 20.00   # how much money Player 1 starts with
+player2_bank = 20.00   # how much money Player 2 starts with
+pot          = 0.00    # the pot starts empty at the beginning of the game
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BETTING FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
 
 def format_money(amount):
     """Format a money amount nicely for display.
@@ -351,8 +355,8 @@ def post_blinds(player1_bank, player2_bank, small_blind, big_blind):
     Player 1 always posts the big blind, Player 2 always posts the small blind.
     Returns the updated banks and the starting pot."""
 
-    player1_bank -= big_blind               # deduct big blind from Player 1's bank
-    player2_bank -= small_blind             # deduct small blind from Player 2's bank
+    player1_bank -= big_blind                 # deduct big blind from Player 1's bank
+    player2_bank -= small_blind               # deduct small blind from Player 2's bank
     pot           = big_blind + small_blind   # the pot starts with both blinds combined
 
     # display the blind information so both players can see what was posted
@@ -387,9 +391,9 @@ def player_action(bank, current_bet=0):
                 try:
                     amount = float(input('  Raise amount: $'))   # read the raise amount as a number
                     if amount <= 0:
-                        print('  Raise amount must be more than zero. Try again.')   # must bet at least something
+                        print('  Raise amount must be more than zero. Try again.')      # must bet at least something
                     elif amount > bank:
-                        print(f'  You only have {fmt(bank)}. You cannot bet more than that.')   # can't bet more than you have
+                        print(f'  You only have {format_money(bank)}. You cannot bet more than that.')   # FIXED: was fmt(bank), now format_money(bank)
                     else:
                         return 'raise', amount   # valid raise — return the action and amount
                 except ValueError:
