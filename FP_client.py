@@ -330,7 +330,7 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
 # BETTING FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def fmt(amount):
+def format_money(amount):
     """Format a money amount nicely for display.
     Whole numbers show as $10, decimals show as $10.50"""
     if amount == int(amount):      # check if the amount has no decimal part
@@ -349,7 +349,7 @@ def post_blinds(player1_bank, player2_bank, small_blind, big_blind):
     pot           = big_blind + small_blind   # the pot starts with both blinds combined
 
     # display the blind information so both players can see what was posted
-    print(f'  Blinds — Player 1: {fmt(big_blind)} (big)  |  Player 2: {fmt(small_blind)} (small)  |  Pot: {fmt(pot)}')
+    print(f'  Blinds — Player 1: {format_money(big_blind)} (big)  |  Player 2: {format_money(small_blind)} (small)  |  Pot: {format_money(pot)}')
 
     return player1_bank, player2_bank, pot   # send the updated values back to the game
 
@@ -366,7 +366,7 @@ def player_action(bank, current_bet=0):
         prompt  = '  Your move (fold / check / raise): '
     else:
         options = ['fold', 'call', 'raise']               # bet on the table — must call or raise to stay in
-        prompt  = f'  Your move (fold / call {fmt(current_bet)} / raise): '
+        prompt  = f'  Your move (fold / call {format_money(current_bet)} / raise): '
 
     while True:   # keep asking until the player gives a valid answer
         move = input(prompt).strip().lower()   # read the player's input, remove extra spaces, make lowercase
@@ -403,16 +403,16 @@ def award_pot(pot, player1_bank, player2_bank, winner):
 
     if winner == 'player1':
         player1_bank += pot   # add the whole pot to Player 1's bank
-        print(f'  Player 1 wins the pot of {fmt(pot)}!')
+        print(f'  Player 1 wins the pot of {format_money(pot)}!')
 
     elif winner == 'player2':
         player2_bank += pot   # add the whole pot to Player 2's bank
-        print(f'  Player 2 wins the pot of {fmt(pot)}!')
+        print(f'  Player 2 wins the pot of {format_money(pot)}!')
 
     else:   # tie — split the pot evenly between both players
         split         = pot / 2          # divide the pot in half
         player1_bank += split            # give each player their half
         player2_bank += split
-        print(f'  Tie! The pot is split — each player receives {fmt(split)}.')
+        print(f'  Tie! The pot is split — each player receives {format_money(split)}.')
 
     return player1_bank, player2_bank   # send the updated banks back to the game
