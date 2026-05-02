@@ -1,23 +1,27 @@
 import random
 from itertools import combinations
 
-def create_deck(): # I used AI to refine my original deck-building code
-    suits   = ["Hearts", "Diamonds", "Clubs", "Spades"]
-    numbers = ["2", "3", "4", "5", "6", "7", "8", "9",
-               "10", "Jack", "Queen", "King", "Ace"]
-    # combine every number with every suit to make 52 unique cards
-    return [f"{n} of {s}" for s in suits for n in numbers]
+# ─── suit symbols ─────────────────────────────────────────────────────────────
+C = '\u2663'   # ♣ Clubs
+D = '\u2662'   # ♢ Diamonds
+H = '\u2661'   # ♡ Hearts
+S = '\u2660'   # ♠ Spades
 
+# ─── card value lookup — defined once at module level ─────────────────────────
+CARD_VALUES = {"2": 2,  "3": 3,  "4": 4,  "5": 5,  "6": 6, "7": 7,  "8": 8,  "9": 9,  "10": 10,"J": 11, "Q": 12, "K": 13, "A": 14}
+
+
+def create_deck():
+    suits   = [C, D, H, S]
+    numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] # cards now look like "Q♡" or "10♣"
+    return [f"{n}{s}" for s in suits for n in numbers]
 
 def get_card_value(card):
-    number = card.split(" of ")[0]   # grab the value from the card
-    vals   = {"2":2,  "3":3,  "4":4,  "5":5,  "6":6,  "7":7,  "8":8, "9":9,  "10":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
-    return vals[number]
-
+    number = card[:-1]        # everything except the last character (the suit symbol)
+    return CARD_VALUES[number]
 
 def get_card_suit(card):
-    return card.split(" of ")[1]
-
+    return card[-1]           # the last character is always the suit symbol
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HAND EVALUATION
