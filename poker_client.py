@@ -10,8 +10,6 @@ def get_action(to_call, bank):
     """
     Show the player their options and return their choice as a string
     the server can parse: 'fold', 'check', 'call', or 'raise:<amount>'
-    Mirrors player_action() from poker_lib but sends over the socket instead
-    of returning locally.
     """
     if to_call == 0:
         options = ['fold', 'check', 'raise']
@@ -44,29 +42,29 @@ def get_action(to_call, bank):
 
 
 def main():
-    print("## Texas Hold'em — Client  (Player 2 / Small Blind) ##\n")
+    print("## Texas Hold'em — Client (Player 2) ##\n")
 
     with create_new_socket() as s:
         s.connect(HOST, PORT)
         print("Connected to server!\n")
 
-        p2_bank = 20.00   # starting bank — re-synced each turn via YOUR_TURN messages
+        p2_bank = 20.00   # kept in sync via YOUR_TURN messages
 
         while True:
             msg = s.recv()
 
             # ── Server is asking us to act ────────────────────────────────────
             if msg.startswith('YOUR_TURN:'):
-                # first line format: "YOUR_TURN:<to_call>:<p2_bank>"
-                # everything after the first newline is the state display text
+                # first line: "YOUR_TURN:<to_call>:<p2_bank>"
+                # everything after the first newline is the state display
                 first_line, _, state_text = msg.partition('\n')
-                parts   = first_line.split(':')   # ['YOUR_TURN', to_call, p2_bank]
+                parts   = first_line.split(':')
                 to_call = float(parts[1])
-                p2_bank = float(parts[2])         # keep our bank in sync with the server
+                p2_bank = float(parts[2])   # keep our bank in sync with the server
 
                 print(state_text)
                 action = get_action(to_call, p2_bank)
-                s.sendall(action)                 # send choice back to server
+                s.sendall(action)
 
             # ── Game is ending ────────────────────────────────────────────────
             elif msg.startswith('GAME_OVER'):
@@ -74,11 +72,11 @@ def main():
                 print(ending if ending else 'Game over.')
                 break
 
-            # ── Server confirmed another hand is coming ───────────────────────
+            # ── Another hand is coming — nothing to do ────────────────────────
             elif msg == 'NEXT_HAND':
-                pass   # nothing to do — the hand header will arrive momentarily
+                pass
 
-            # ── Everything else is a display message ──────────────────────────
+            # ── Everything else is just a display message ─────────────────────
             else:
                 print(msg)
 
