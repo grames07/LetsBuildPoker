@@ -1,4 +1,5 @@
-import random 
+import random
+from itertools import combinations
 
 def create_deck(): # I used AI to refine my original deck-building code
     suits   = ["Hearts", "Diamonds", "Clubs", "Spades"]
@@ -76,33 +77,14 @@ def evaluate_five_card_hand(cards):
         return (0, values)
 
 
-def best_hand_rank(hole_cards, community_cards):
-    # combine the 2 hole cards and 5 community cards into one list of 7 cards
-    all_cards = list(hole_cards) + list(community_cards)   # gives us 7 cards to work with
-    best = None   # we haven't evaluated any hand yet, so best is empty
-    n = len(all_cards)   # n = 7, used to control our loops below
-
-    # we need to try every possible group of 5 cards from the 7 available
-    # 5 nested loops let us pick 5 different index positions without repeating any card
-    # each loop starts one step ahead of the last to avoid picking the same card twice
-    for i in range(n):             # pick the 1st card
-        for j in range(i+1, n):    # pick the 2nd card (always after the 1st)
-            for k in range(j+1, n):    # pick the 3rd card (always after the 2nd)
-                for l in range(k+1, n):    # pick the 4th card (always after the 3rd)
-                    for m in range(l+1, n):    # pick the 5th card (always after the 4th)
-
-                        # build a 5-card hand using the 5 chosen index positions
-                        combo = [all_cards[i], all_cards[j], all_cards[k], all_cards[l], all_cards[m]]
-
-                        # evaluate this particular 5-card combination
-                        rank = evaluate_five_card_hand(combo)
-
-                        if best is None:
-                            best = rank   # this is the very first combo we've tried, so it's our best so far
-                        elif compare_hands(rank, best) == 1:
-                            best = rank   # this combo beats our current best, so it becomes the new best
-
-    return best   # return the best hand we found out of all 21 possible combinations
+def best_hand_rank(hole_cards, community_cards): # takes the player's 2 cards & 5 other cards, finds best hand
+    all_cards = list(hole_cards) + list(community_cards) # complile all 7 cards into one list
+    best = None # place to store best hand we find
+    for combo in combinations(all_cards, 5): # check every combination of 5 cards from the 7 available
+        rank = evaluate_five_card_hand(list(combo)) # use the evaluate_five_card_hand function on every 5 card combo
+        if best is None or compare_hands(rank, best) == 1: # if it is the first check or if it is the best hand so far, save it
+            best = rank # 
+    return best
 
 
 def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted card values]) - need to compare ranks, than deal with tiebreakers
