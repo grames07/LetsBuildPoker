@@ -9,26 +9,40 @@ BIG_BLIND   = 0.50
 SMALL_BLIND = 0.25
 START_BANK  = 20.00
 
+MSG_END      = "<<<END>>>"   # appended to every message we send — marks where it ends
+_recv_buffer = ""            # holds leftover data between recv calls
+
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def send(conn, text):
-    """Send a plain display message — client just prints it."""
-    conn.sendall(str(text))
+    """Send a display message with the end marker attached."""
+    conn.sendall(str(text) + MSG_END)
+
+
+def recv_msg(conn):
+    """Receive one complete message.
+    Because TCP can merge multiple sends into one recv, we keep reading
+    into a buffer until we find MSG_END, then return everything before it.
+    Any data after MSG_END is kept in the buffer for the next call."""
+    global _recv_buffer
+    while MSG_END not in _recv_buffer:        # keep reading until we have a full message
+        _recv_buffer += conn.recv()
+    msg, _, _recv_buffer = _recv_buffer.partition(MSG_END)   # split off the first complete message
+    return msg
 
 
 def mirror(conn, server_msg, client_msg):
-    """Print server_msg on the server terminal and send client_msg to the client.
-    Both messages must use identical formatting — only You/Opponent differ."""
+    """Print server_msg locally and send client_msg to the client.
+    Both messages use identical formatting — only You/Opponent labels differ."""
     print(server_msg)
     send(conn, client_msg)
 
 
 def send_turn(conn, to_call, p2_bank, state_text):
     """Tell the client it is their turn to act.
-    Format: "YOUR_TURN:<to_call>:<p2_bank>\\n<state_text>"
-    """
-    conn.sendall(f"YOUR_TURN:{to_call:.2f}:{p2_bank:.2f}\n{state_text}")
+    Format: YOUR_TURN:<to_call>:<p2_bank>\\n<state_text>"""
+    conn.sendall(f"YOUR_TURN:{to_call:.2f}:{p2_bank:.2f}\n{state_text}" + MSG_END)
 
 
 # ─── betting round ────────────────────────────────────────────────────────────
@@ -48,14 +62,14 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
         # ── Client's turn (Player 2) ──────────────────────────────────────────
         to_call_p2 = max(0.0, round(p1_in - p2_in, 2))
 
-        # client state — same template as server state, just with p1_in/p2_in swapped
+        # client sees their own bet as "Your bet" and P1's as "Opponent's bet"
         client_state = (f"\n  [{stage}]  Community: {comm_str}\n"
                         f"  Pot: {plib.format_money(pot)}  |  "
                         f"Your bet this round: {plib.format_money(p2_in)}  |  "
                         f"Opponent's bet this round: {plib.format_money(p1_in)}")
         send_turn(conn, to_call_p2, p2_bank, client_state)
 
-        raw = conn.recv()
+        raw = recv_msg(conn)   # wait for the client's action — uses buffer to avoid merge issues
 
         if raw == 'fold':
             mirror(conn,
@@ -98,7 +112,7 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
         # ── Server's turn (Player 1) ──────────────────────────────────────────
         to_call_p1 = max(0.0, round(p2_in - p1_in, 2))
 
-        # server state — same template as client state, just with p1_in/p2_in swapped
+        # server sees their own bet as "Your bet" and P2's as "Opponent's bet"
         server_state = (f"\n  [{stage}]  Community: {comm_str}\n"
                         f"  Pot: {plib.format_money(pot)}  |  "
                         f"Your bet this round: {plib.format_money(p1_in)}  |  "
@@ -232,7 +246,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
            f"  Your hole cards: {p1_hole[0]}, {p1_hole[1]}",
            f"  Your hole cards: {p2_hole[0]}, {p2_hole[1]}")
 
-    # ── Pre-Flop — identical on both sides ────────────────────────────────────
+    # ── Pre-Flop ──────────────────────────────────────────────────────────────
     pre_flop_msg = "\n  ── Pre-Flop ──"
     mirror(conn, pre_flop_msg, pre_flop_msg)
     p1_bank, p2_bank, pot, winner = run_betting_round(
@@ -240,7 +254,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
-    # ── Flop — identical on both sides ────────────────────────────────────────
+    # ── Flop ──────────────────────────────────────────────────────────────────
     community += [deck.pop(), deck.pop(), deck.pop()]
     flop_msg   = f"\n  ── Flop: {', '.join(community)} ──"
     mirror(conn, flop_msg, flop_msg)
@@ -249,7 +263,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
-    # ── Turn — identical on both sides ────────────────────────────────────────
+    # ── Turn ──────────────────────────────────────────────────────────────────
     community.append(deck.pop())
     turn_msg = f"\n  ── Turn: {', '.join(community)} ──"
     mirror(conn, turn_msg, turn_msg)
@@ -258,7 +272,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
-    # ── River — identical on both sides ───────────────────────────────────────
+    # ── River ─────────────────────────────────────────────────────────────────
     community.append(deck.pop())
     river_msg = f"\n  ── River: {', '.join(community)} ──"
     mirror(conn, river_msg, river_msg)
@@ -310,19 +324,19 @@ def main():
                 if p1_bank <= 0:
                     send(conn, "GAME_OVER\nYou win — opponent is out of chips!")
                     print("Opponent wins the game!")
-                    conn.recv()   # wait for client's empty-string acknowledgement
+                    recv_msg(conn)   # wait for client's empty acknowledgement before closing
                     break
                 if p2_bank <= 0:
                     send(conn, "GAME_OVER\nOpponent wins — you are out of chips!")
                     print("You win the game!")
-                    conn.recv()   # wait for client's empty-string acknowledgement
+                    recv_msg(conn)   # wait for client's empty acknowledgement before closing
                     break
 
                 # ── ask server player if they want another hand ────────────────
                 again = input("\n  Play another hand? (yes / no): ").strip().lower()
                 if again != 'yes':
                     send(conn, "GAME_OVER\nThanks for playing!")
-                    conn.recv()   # wait for client's empty-string acknowledgement
+                    recv_msg(conn)   # wait for client's empty acknowledgement before closing
                     break
                 send(conn, "NEXT_HAND")
 

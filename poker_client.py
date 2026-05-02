@@ -5,6 +5,21 @@ import poker_lib as plib
 HOST = '127.0.0.1'
 PORT = 65444
 
+MSG_END      = "<<<END>>>"   # every message from the server ends with this marker
+_recv_buffer = ""            # holds leftover data between recv calls
+
+
+def recv_msg(s):
+    """Receive one complete message.
+    Because TCP can merge multiple sends into one recv, we keep reading
+    into a buffer until we find MSG_END, then return everything before it.
+    Any data after MSG_END is kept in the buffer for the next call."""
+    global _recv_buffer
+    while MSG_END not in _recv_buffer:        # keep reading until we have a full message
+        _recv_buffer += s.recv()
+    msg, _, _recv_buffer = _recv_buffer.partition(MSG_END)   # split off the first complete message
+    return msg
+
 
 def get_action(to_call, bank):
     """
@@ -51,7 +66,7 @@ def main():
         p2_bank = 20.00   # kept in sync via YOUR_TURN messages
 
         while True:
-            msg = s.recv()
+            msg = recv_msg(s)   # always use recv_msg so merged messages are handled correctly
 
             # ── Server is asking us to act ────────────────────────────────────
             if msg.startswith('YOUR_TURN:'):
@@ -64,13 +79,13 @@ def main():
 
                 print(state_text)
                 action = get_action(to_call, p2_bank)
-                s.sendall(action)
+                s.sendall(action + MSG_END)   # attach MSG_END so the server's recv_msg works too
 
             # ── Game is ending ────────────────────────────────────────────────
             elif msg.startswith('GAME_OVER'):
                 _, _, ending = msg.partition('\n')
                 print(ending if ending else 'Game over.')
-                s.sendall(str())   # signal back to server that we received it — mirrors RPS pattern
+                s.sendall(MSG_END)   # send empty acknowledgement — mirrors RPS end-of-game pattern
                 break
 
             # ── Another hand is coming — nothing to do ────────────────────────
