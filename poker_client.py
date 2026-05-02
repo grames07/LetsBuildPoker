@@ -70,13 +70,14 @@ def main():
             elif msg.startswith('GAME_OVER'):
                 _, _, ending = msg.partition('\n')
                 print(ending if ending else 'Game over.')
+                s.sendall(str())   # signal back to server that we received it — mirrors RPS pattern
                 break
 
             # ── Another hand is coming — nothing to do ────────────────────────
             elif msg == 'NEXT_HAND':
                 pass
 
-            # ── Everything else is just a display message ─────────────────────
+            # ── Everything else is a display message — just print it ──────────
             else:
                 print(msg)
 
