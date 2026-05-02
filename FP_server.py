@@ -155,7 +155,20 @@ def end_hand(conn, p1_bank, p2_bank, pot, winner):
 
 
 def play_hand(conn, p1_bank, p2_bank, hand_num):
-    """Deal and play one complete hand of Texas Hold'em. Returns updated banks."""
+
+    # ── decide who posts which blind this hand ─────────────────────────────
+    # odd hands: P1 = big blind, P2 = small blind
+    # even hands: P1 = small blind, P2 = big blind
+    if hand_num % 2 == 1:
+        p1_blind      = BIG_BLIND
+        p2_blind      = SMALL_BLIND
+        p1_blind_name = "big"
+        p2_blind_name = "small"
+    else:
+        p1_blind      = SMALL_BLIND
+        p2_blind      = BIG_BLIND
+        p1_blind_name = "small"
+        p2_blind_name = "big"
 
     # ── Header ────────────────────────────────────────────────────────────────
     header = (f"\n{'─'*55}\n"
@@ -174,16 +187,19 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     community = []
 
     # ── Blinds ────────────────────────────────────────────────────────────────
-    p1_bank, p2_bank, pot = plib.post_blinds(p1_bank, p2_bank, SMALL_BLIND, BIG_BLIND)
-    p1_in = BIG_BLIND
-    p2_in = SMALL_BLIND
+    p1_bank -= p1_blind
+    p2_bank -= p2_blind
+    pot       = p1_blind + p2_blind
+    p1_in     = p1_blind    # tracks how much each player has put in pre-flop
+    p2_in     = p2_blind
 
-    send(conn, (f"\n  Blinds — P1: {plib.format_money(BIG_BLIND)} (big)  |  "
-                f"P2: {plib.format_money(SMALL_BLIND)} (small)  |  "
-                f"Pot: {plib.format_money(pot)}"))
+    blind_msg = (f"\n  Blinds — P1: {plib.format_money(p1_blind)} ({p1_blind_name})  |  "
+                 f"P2: {plib.format_money(p2_blind)} ({p2_blind_name})  |  "
+                 f"Pot: {plib.format_money(pot)}")
+    print(blind_msg)
+    send(conn, blind_msg)
 
-    print(f"  Your hole cards: {p1_hole[0]}, {p1_hole[1]}")
-    send(conn, f"  Your hole cards: {p2_hole[0]}, {p2_hole[1]}")
+    # rest of the function stays exactly the same from here down...
 
     # ── Pre-Flop ──────────────────────────────────────────────────────────────
     print("\n  ── Pre-Flop ──")
