@@ -298,18 +298,6 @@ def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted ca
 
     return tie   # fallback safety net — should never actually be reached
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# GAME VALUES — change these to adjust the game before running
-# ─────────────────────────────────────────────────────────────────────────────
-
-big_blind    = 0.50    # the big blind amount — Player 1 posts this every round
-small_blind  = 0.25    # the small blind amount — Player 2 posts this every round
-player1_bank = 20.00   # how much money Player 1 starts with
-player2_bank = 20.00   # how much money Player 2 starts with
-pot          = 0.00    # the pot starts empty at the beginning of the game
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # BETTING FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
