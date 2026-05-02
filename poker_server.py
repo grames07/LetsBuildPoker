@@ -3,11 +3,11 @@ from socket32 import create_new_socket
 import poker_lib as plib
 import random
 
-HOST       = '127.0.0.1'
-PORT       = 65444
-BIG_BLIND  = 0.50
+HOST        = '127.0.0.1'
+PORT        = 65444
+BIG_BLIND   = 0.50
 SMALL_BLIND = 0.25
-START_BANK = 20.00
+START_BANK  = 20.00
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
@@ -20,7 +20,6 @@ def send(conn, text):
 def send_turn(conn, to_call, p2_bank, state_text):
     """
     Tell the client it is their turn to act.
-    Embeds to_call and p2_bank on line 1 so the client can build its prompt.
     Format: "YOUR_TURN:<to_call>:<p2_bank>\\n<state_text>"
     """
     conn.sendall(f"YOUR_TURN:{to_call:.2f}:{p2_bank:.2f}\n{state_text}")
@@ -31,15 +30,11 @@ def send_turn(conn, to_call, p2_bank, state_text):
 def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, community):
     """
     One full betting round — client (Player 2) always acts first.
-
-    p1_in / p2_in : amount each player has already put in THIS round.
-                    Pass big_blind / small_blind for pre-flop, 0 / 0 otherwise.
-
     Returns: p1_bank, p2_bank, pot, winner
              winner is None if nobody folded, or 'player1'/'player2' on a fold.
     """
-    p1_acted = False   # has Player 1 acted since the last raise?
-    p2_acted = False   # has Player 2 acted since the last raise?
+    p1_acted = False
+    p2_acted = False
     comm_str  = ', '.join(community) if community else 'None'
 
     while True:
@@ -47,71 +42,76 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
         # ── Client's turn (Player 2) ──────────────────────────────────────────
         to_call_p2 = max(0.0, round(p1_in - p2_in, 2))
 
+        # client sees their own bet as "Your bet" and P1's bet as "Opponent's bet"
         state = (f"  [{stage}]  Community: {comm_str}\n"
                  f"  Pot: {plib.format_money(pot)}  |  "
                  f"Your bet this round: {plib.format_money(p2_in)}  |  "
-                 f"P1 bet this round: {plib.format_money(p1_in)}")
+                 f"Opponent's bet this round: {plib.format_money(p1_in)}")
         send_turn(conn, to_call_p2, p2_bank, state)
 
-        raw = conn.recv()   # wait for client's action string
+        raw = conn.recv()
 
         if raw == 'fold':
-            send(conn, "  You folded.")
+            print("  Opponent folded.")                          # server sees "Opponent"
+            send(conn, "  You folded.")                          # client sees "You"
             return p1_bank, p2_bank, pot, 'player1'
 
         elif raw == 'check':
+            print("  Opponent checked.")
             send(conn, "  You checked.")
-            print("  Player 2 checked.")
             p2_acted = True
 
         elif raw == 'call':
-            actual   = min(to_call_p2, p2_bank)   # cap at bank (all-in protection)
+            actual   = min(to_call_p2, p2_bank)
             p2_bank -= actual
             pot     += actual
             p2_in   += actual
+            print(f"  Opponent called {plib.format_money(actual)}.")
             send(conn, f"  You called {plib.format_money(actual)}.")
-            print(f"  Player 2 called {plib.format_money(actual)}.")
             p2_acted = True
 
         elif raw.startswith('raise:'):
             raise_amt  = float(raw.split(':', 1)[1])
-            call_first = max(0.0, p1_in - p2_in)          # cover the call before raising
+            call_first = max(0.0, p1_in - p2_in)
             total      = min(call_first + raise_amt, p2_bank)
             p2_bank   -= total
             pot       += total
             p2_in     += total
+            print(f"  Opponent raised — total this round: {plib.format_money(p2_in)}.")
             send(conn, f"  You raised — your total this round: {plib.format_money(p2_in)}.")
-            print(f"  Player 2 raised — total this round: {plib.format_money(p2_in)}.")
             p2_acted  = True
             p1_acted  = False   # server must respond to the raise
 
-        # round is over when both have acted and both have matched the same amount
         if p1_acted and p2_acted and round(p1_in, 2) == round(p2_in, 2):
             break
 
         # ── Server's turn (Player 1) ──────────────────────────────────────────
         to_call_p1 = max(0.0, round(p2_in - p1_in, 2))
 
+        # server sees their own bet as "Your bet" and P2's bet as "Opponent's bet"
         print(f"\n  [{stage}]  Community: {comm_str}")
         print(f"  Pot: {plib.format_money(pot)}  |  "
               f"Your bet this round: {plib.format_money(p1_in)}  |  "
-              f"P2 bet this round: {plib.format_money(p2_in)}")
+              f"Opponent's bet this round: {plib.format_money(p2_in)}")
 
-        action, amount = plib.player_action(p1_bank, to_call_p1)   # local input
+        action, amount = plib.player_action(p1_bank, to_call_p1)
 
         if action == 'fold':
-            send(conn, "  Player 1 folded. You win this hand!")
+            print("  You folded.")
+            send(conn, "  Opponent folded. You win this hand!")
             return p1_bank, p2_bank, pot, 'player2'
 
         elif action == 'check':
-            send(conn, "  Player 1 checked.")
+            print("  You checked.")
+            send(conn, "  Opponent checked.")
             p1_acted = True
 
         elif action == 'call':
-            p1_bank -= amount   # player_action already capped amount at bank
+            p1_bank -= amount
             pot     += amount
             p1_in   += amount
-            send(conn, f"  Player 1 called {plib.format_money(amount)}.")
+            print(f"  You called {plib.format_money(amount)}.")
+            send(conn, f"  Opponent called {plib.format_money(amount)}.")
             p1_acted = True
 
         elif action == 'raise':
@@ -120,7 +120,8 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
             p1_bank   -= total
             pot       += total
             p1_in     += total
-            send(conn, f"  Player 1 raised — total this round: {plib.format_money(p1_in)}.")
+            print(f"  You raised — total this round: {plib.format_money(p1_in)}.")
+            send(conn, f"  Opponent raised — total this round: {plib.format_money(p1_in)}.")
             p1_acted  = True
             p2_acted  = False   # client must respond to the raise
 
@@ -135,29 +136,37 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
 def end_hand(conn, p1_bank, p2_bank, pot, winner):
     """Award the pot, show the result on both terminals, return updated banks."""
     if winner == 'player1':
-        p1_bank += pot
-        result   = f"  Player 1 wins the pot of {plib.format_money(pot)}!"
+        p1_bank    += pot
+        server_msg  = f"  You win the pot of {plib.format_money(pot)}!"        # server sees "You"
+        client_msg  = f"  Opponent wins the pot of {plib.format_money(pot)}!"  # client sees "Opponent"
     elif winner == 'player2':
-        p2_bank += pot
-        result   = f"  Player 2 wins the pot of {plib.format_money(pot)}!"
+        p2_bank    += pot
+        server_msg  = f"  Opponent wins the pot of {plib.format_money(pot)}!"
+        client_msg  = f"  You win the pot of {plib.format_money(pot)}!"
     else:
-        split    = pot / 2
-        p1_bank += split
-        p2_bank += split
-        result   = f"  Tie! Each player receives {plib.format_money(split)}."
+        split       = pot / 2
+        p1_bank    += split
+        p2_bank    += split
+        server_msg  = f"  Tie! Each player receives {plib.format_money(split)}."
+        client_msg  = server_msg   # same message for both on a tie
 
-    banks = (f"  P1 bank: {plib.format_money(p1_bank)}  |  "
-             f"P2 bank: {plib.format_money(p2_bank)}")
-    print(result)
-    print(banks)
-    send(conn, result + '\n' + banks)   # client sees both lines
+    # each player sees their own bank as "You" and the other as "Opponent"
+    server_banks = (f"  You: {plib.format_money(p1_bank)}  |  "
+                    f"Opponent: {plib.format_money(p2_bank)}")
+    client_banks = (f"  You: {plib.format_money(p2_bank)}  |  "
+                    f"Opponent: {plib.format_money(p1_bank)}")
+
+    print(server_msg)
+    print(server_banks)
+    send(conn, client_msg + '\n' + client_banks)
     return p1_bank, p2_bank
 
 
 def play_hand(conn, p1_bank, p2_bank, hand_num):
+    """Deal and play one complete hand of Texas Hold'em. Returns updated banks."""
 
     # ── decide who posts which blind this hand ─────────────────────────────
-    # odd hands: P1 = big blind, P2 = small blind
+    # odd hands: P1 = big blind,   P2 = small blind
     # even hands: P1 = small blind, P2 = big blind
     if hand_num % 2 == 1:
         p1_blind      = BIG_BLIND
@@ -170,14 +179,19 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
         p1_blind_name = "small"
         p2_blind_name = "big"
 
-    # ── Header ────────────────────────────────────────────────────────────────
-    header = (f"\n{'─'*55}\n"
-              f"  HAND {hand_num}   "
-              f"P1: {plib.format_money(p1_bank)}   "
-              f"P2: {plib.format_money(p2_bank)}\n"
-              f"{'─'*55}")
-    print(header)
-    send(conn, header)
+    # ── Header — each player sees their own bank as "You" ─────────────────────
+    server_header = (f"\n{'─'*55}\n"
+                     f"  HAND {hand_num}   "
+                     f"You: {plib.format_money(p1_bank)}   "
+                     f"Opponent: {plib.format_money(p2_bank)}\n"
+                     f"{'─'*55}")
+    client_header = (f"\n{'─'*55}\n"
+                     f"  HAND {hand_num}   "
+                     f"You: {plib.format_money(p2_bank)}   "
+                     f"Opponent: {plib.format_money(p1_bank)}\n"
+                     f"{'─'*55}")
+    print(server_header)
+    send(conn, client_header)
 
     # ── Deal ──────────────────────────────────────────────────────────────────
     deck = plib.create_deck()
@@ -190,16 +204,22 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     p1_bank -= p1_blind
     p2_bank -= p2_blind
     pot       = p1_blind + p2_blind
-    p1_in     = p1_blind    # tracks how much each player has put in pre-flop
+    p1_in     = p1_blind   # tracks how much each player has put in this round
     p2_in     = p2_blind
 
-    blind_msg = (f"\n  Blinds — P1: {plib.format_money(p1_blind)} ({p1_blind_name})  |  "
-                 f"P2: {plib.format_money(p2_blind)} ({p2_blind_name})  |  "
-                 f"Pot: {plib.format_money(pot)}")
-    print(blind_msg)
-    send(conn, blind_msg)
+    # each player sees their own blind as "You" and the other as "Opponent"
+    server_blinds = (f"\n  Blinds — You: {plib.format_money(p1_blind)} ({p1_blind_name})  |  "
+                     f"Opponent: {plib.format_money(p2_blind)} ({p2_blind_name})  |  "
+                     f"Pot: {plib.format_money(pot)}")
+    client_blinds = (f"\n  Blinds — You: {plib.format_money(p2_blind)} ({p2_blind_name})  |  "
+                     f"Opponent: {plib.format_money(p1_blind)} ({p1_blind_name})  |  "
+                     f"Pot: {plib.format_money(pot)}")
+    print(server_blinds)
+    send(conn, client_blinds)
 
-    # rest of the function stays exactly the same from here down...
+    # each player only sees their own hole cards
+    print(f"  Your hole cards: {p1_hole[0]}, {p1_hole[1]}")
+    send(conn, f"  Your hole cards: {p2_hole[0]}, {p2_hole[1]}")
 
     # ── Pre-Flop ──────────────────────────────────────────────────────────────
     print("\n  ── Pre-Flop ──")
@@ -239,35 +259,40 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
-    # ── Showdown ──────────────────────────────────────────────────────────────
+    # ── Showdown — each player sees their own cards under "You" ───────────────
     p1_best = plib.best_hand_rank(p1_hole, community)
     p2_best = plib.best_hand_rank(p2_hole, community)
     result  = plib.compare_hands(p1_best, p2_best)
 
-    showdown = (f"\n  ── Showdown ──\n"
-                f"  Player 1: {p1_hole[0]}, {p1_hole[1]}"
-                f"  →  {plib.possible_hands[p1_best[0]]}\n"
-                f"  Player 2: {p2_hole[0]}, {p2_hole[1]}"
-                f"  →  {plib.possible_hands[p2_best[0]]}")
-    print(showdown)
-    send(conn, showdown)
+    server_showdown = (f"\n  ── Showdown ──\n"
+                       f"  You: {p1_hole[0]}, {p1_hole[1]}"
+                       f"  →  {plib.possible_hands[p1_best[0]]}\n"
+                       f"  Opponent: {p2_hole[0]}, {p2_hole[1]}"
+                       f"  →  {plib.possible_hands[p2_best[0]]}")
+    client_showdown = (f"\n  ── Showdown ──\n"
+                       f"  You: {p2_hole[0]}, {p2_hole[1]}"
+                       f"  →  {plib.possible_hands[p2_best[0]]}\n"
+                       f"  Opponent: {p1_hole[0]}, {p1_hole[1]}"
+                       f"  →  {plib.possible_hands[p1_best[0]]}")
+    print(server_showdown)
+    send(conn, client_showdown)
 
     winner = 'player1' if result == 1 else ('player2' if result == -1 else 'tie')
     return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
 
-# ─── main ──────────────────────────────────────────────────────────────────────
+# ─── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    print("## Texas Hold'em — Server  (Player 1 / Big Blind) ##\n")
+    print("## Texas Hold'em — Server (Player 1) ##\n")
 
     with create_new_socket() as s:
         s.bind(HOST, PORT)
         s.listen()
-        print(f"Waiting for Player 2 on {HOST}:{PORT} ...")
+        print(f"Waiting for opponent on {HOST}:{PORT} ...")
 
         conn, addr = s.accept()
-        print(f"Player 2 connected from {addr}\n")
+        print(f"Opponent connected from {addr}\n")
 
         with conn:
             p1_bank  = START_BANK
@@ -280,12 +305,12 @@ def main():
 
                 # ── check if the game is over ──────────────────────────────────
                 if p1_bank <= 0:
-                    send(conn, "GAME_OVER\nPlayer 2 wins — Player 1 is out of chips!")
-                    print("Player 2 wins the game!")
+                    send(conn, "GAME_OVER\nYou win — opponent is out of chips!")
+                    print("Opponent wins the game!")
                     break
                 if p2_bank <= 0:
-                    send(conn, "GAME_OVER\nPlayer 1 wins — Player 2 is out of chips!")
-                    print("Player 1 wins the game!")
+                    send(conn, "GAME_OVER\nOpponent wins — you are out of chips!")
+                    print("You win the game!")
                     break
 
                 # ── ask server player if they want another hand ────────────────
@@ -293,7 +318,7 @@ def main():
                 if again != 'yes':
                     send(conn, "GAME_OVER\nThanks for playing!")
                     break
-                send(conn, "NEXT_HAND")   # signal client that another hand is starting
+                send(conn, "NEXT_HAND")
 
             print("\n  Session ended.")
 
