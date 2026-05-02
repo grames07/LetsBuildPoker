@@ -83,8 +83,8 @@ def best_hand_rank(hole_cards, community_cards): # takes the player's 2 cards & 
     for combo in combinations(all_cards, 5): # check every combination of 5 cards from the 7 available
         rank = evaluate_five_card_hand(list(combo)) # use the evaluate_five_card_hand function on every 5 card combo
         if best is None or compare_hands(rank, best) == 1: # if it is the first check or if it is the best hand so far, save it
-            best = rank # 
-    return best
+            best = rank # store our best hand found so far
+    return best # when we've checked all combos, return the best hand we found
 
 
 def compare_hands(hand1, hand2): # hands look like tuples: (rank_int, [sorted card values]) - need to compare ranks, than deal with tiebreakers
