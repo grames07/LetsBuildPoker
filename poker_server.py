@@ -5,6 +5,8 @@ import random
 
 HOST        = '127.0.0.1'
 PORT        = 65444
+
+# THESE VALUES CAN BE CHANGED, DEPENDING ON HOW YOU WANT TO STRUCTURE THE GAME
 BIG_BLIND   = 0.50
 SMALL_BLIND = 0.25
 START_BANK  = 20.00
@@ -15,16 +17,11 @@ _recv_buffer = ""            # holds leftover data between recv calls
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
-def send(conn, text):
-    """Send a display message with the end marker attached."""
+def send(conn, text): # send a message with MSG_END appended to avoid merge issues on the client side
     conn.sendall(str(text) + MSG_END)
 
 
-def recv_msg(conn):
-    """Receive one complete message.
-    Because TCP can merge multiple sends into one recv, we keep reading
-    into a buffer until we find MSG_END, then return everything before it.
-    Any data after MSG_END is kept in the buffer for the next call."""
+def recv_msg(conn): # keep reading into a buffer until we find MSG_END, then return everything before it
     global _recv_buffer
     while MSG_END not in _recv_buffer:        # keep reading until we have a full message
         _recv_buffer += conn.recv()
@@ -32,32 +29,23 @@ def recv_msg(conn):
     return msg
 
 
-def mirror(conn, server_msg, client_msg):
-    """Print server_msg locally and send client_msg to the client.
-    Both messages use identical formatting — only You/Opponent labels differ."""
+def mirror(conn, server_msg, client_msg): # allows us to use different messsages for server and client while keeping the same formatting
     print(server_msg)
     send(conn, client_msg)
 
 
-def send_turn(conn, to_call, p2_bank, state_text):
-    """Tell the client it is their turn to act.
-    Format: YOUR_TURN:<to_call>:<p2_bank>\\n<state_text>"""
+def send_turn(conn, to_call, p2_bank, state_text): # tell client it's their turn, how much they need to call, and show them the current state of the hand
     conn.sendall(f"YOUR_TURN:{to_call:.2f}:{p2_bank:.2f}\n{state_text}" + MSG_END)
 
 
 # ─── betting round ────────────────────────────────────────────────────────────
 
-def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, community):
-    """
-    One full betting round — client (Player 2) always acts first.
-    Returns: p1_bank, p2_bank, pot, winner
-             winner is None if nobody folded, or 'player1'/'player2' on a fold.
-    """
+def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, community): # one complete betting round, which includes back/forth betting until both players have acted and the bets are equal (or one folds)
     p1_acted = False
     p2_acted = False
-    comm_str  = ', '.join(community) if community else 'None'
+    comm_str  = ', '.join(community) if community else 'None' # format community cards for display, or show "None" if there are none yet
 
-    while True:
+    while True: # our betting loop
 
         # ── Client's turn (Player 2) ──────────────────────────────────────────
         to_call_p2 = max(0.0, round(p1_in - p2_in, 2))
@@ -72,15 +60,11 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
         raw = recv_msg(conn)   # wait for the client's action — uses buffer to avoid merge issues
 
         if raw == 'fold':
-            mirror(conn,
-                   "  Opponent folded.",
-                   "  You folded.")
+            mirror(conn,"  Opponent folded.","  You folded.")
             return p1_bank, p2_bank, pot, 'player1'
 
         elif raw == 'check':
-            mirror(conn,
-                   "  Opponent checked.",
-                   "  You checked.")
+            mirror(conn,"  Opponent checked.","  You checked.")
             p2_acted = True
 
         elif raw == 'call':
@@ -88,9 +72,7 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
             p2_bank -= actual
             pot     += actual
             p2_in   += actual
-            mirror(conn,
-                   f"  Opponent called {plib.format_money(actual)}.",
-                   f"  You called {plib.format_money(actual)}.")
+            mirror(conn,f"  Opponent called {plib.format_money(actual)}.",f"  You called {plib.format_money(actual)}.")
             p2_acted = True
 
         elif raw.startswith('raise:'):
@@ -100,9 +82,7 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
             p2_bank   -= total
             pot       += total
             p2_in     += total
-            mirror(conn,
-                   f"  Opponent raised — total this round: {plib.format_money(p2_in)}.",
-                   f"  You raised — total this round: {plib.format_money(p2_in)}.")
+            mirror(conn,f"  Opponent raised — total this round: {plib.format_money(p2_in)}.",f"  You raised — total this round: {plib.format_money(p2_in)}.")
             p2_acted  = True
             p1_acted  = False   # server must respond to the raise
 
@@ -162,18 +142,13 @@ def run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, stage, communit
 
 # ─── hand helpers ─────────────────────────────────────────────────────────────
 
-def end_hand(conn, p1_bank, p2_bank, pot, winner):
-    """Award the pot, show the result on both terminals, return updated banks."""
+def end_hand(conn, p1_bank, p2_bank, pot, winner): # awarding the pot
     if winner == 'player1':
         p1_bank += pot
-        mirror(conn,
-               f"  You win the pot of {plib.format_money(pot)}!",
-               f"  Opponent wins the pot of {plib.format_money(pot)}!")
+        mirror(conn, f"  You win the pot of {plib.format_money(pot)}!", f"  Opponent wins the pot of {plib.format_money(pot)}!")
     elif winner == 'player2':
         p2_bank += pot
-        mirror(conn,
-               f"  Opponent wins the pot of {plib.format_money(pot)}!",
-               f"  You win the pot of {plib.format_money(pot)}!")
+        mirror(conn, f"  Opponent wins the pot of {plib.format_money(pot)}!", f"  You win the pot of {plib.format_money(pot)}!")
     else:
         split    = pot / 2
         p1_bank += split
@@ -182,9 +157,7 @@ def end_hand(conn, p1_bank, p2_bank, pot, winner):
         mirror(conn, tie_msg, tie_msg)   # same message for both on a tie
 
     # each player sees their own bank as "You" — same format, values swapped
-    mirror(conn,
-           f"  You: {plib.format_money(p1_bank)}  |  Opponent: {plib.format_money(p2_bank)}",
-           f"  You: {plib.format_money(p2_bank)}  |  Opponent: {plib.format_money(p1_bank)}")
+    mirror(conn, f"  You: {plib.format_money(p1_bank)}  |  Opponent: {plib.format_money(p2_bank)}",f"  You: {plib.format_money(p2_bank)}  |  Opponent: {plib.format_money(p1_bank)}")
 
     return p1_bank, p2_bank
 
@@ -249,8 +222,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     # ── Pre-Flop ──────────────────────────────────────────────────────────────
     pre_flop_msg = "\n  ── Pre-Flop ──"
     mirror(conn, pre_flop_msg, pre_flop_msg)
-    p1_bank, p2_bank, pot, winner = run_betting_round(
-        conn, p1_bank, p2_bank, pot, p1_in, p2_in, "Pre-Flop", community)
+    p1_bank, p2_bank, pot, winner = run_betting_round(conn, p1_bank, p2_bank, pot, p1_in, p2_in, "Pre-Flop", community)
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
@@ -258,8 +230,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     community += [deck.pop(), deck.pop(), deck.pop()]
     flop_msg   = f"\n  ── Flop: {', '.join(community)} ──"
     mirror(conn, flop_msg, flop_msg)
-    p1_bank, p2_bank, pot, winner = run_betting_round(
-        conn, p1_bank, p2_bank, pot, 0, 0, "Flop", community)
+    p1_bank, p2_bank, pot, winner = run_betting_round(conn, p1_bank, p2_bank, pot, 0, 0, "Flop", community)
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
@@ -267,8 +238,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     community.append(deck.pop())
     turn_msg = f"\n  ── Turn: {', '.join(community)} ──"
     mirror(conn, turn_msg, turn_msg)
-    p1_bank, p2_bank, pot, winner = run_betting_round(
-        conn, p1_bank, p2_bank, pot, 0, 0, "Turn", community)
+    p1_bank, p2_bank, pot, winner = run_betting_round(conn, p1_bank, p2_bank, pot, 0, 0, "Turn", community)
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
@@ -276,8 +246,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     community.append(deck.pop())
     river_msg = f"\n  ── River: {', '.join(community)} ──"
     mirror(conn, river_msg, river_msg)
-    p1_bank, p2_bank, pot, winner = run_betting_round(
-        conn, p1_bank, p2_bank, pot, 0, 0, "River", community)
+    p1_bank, p2_bank, pot, winner = run_betting_round(conn, p1_bank, p2_bank, pot, 0, 0, "River", community)
     if winner:
         return end_hand(conn, p1_bank, p2_bank, pot, winner)
 
@@ -289,8 +258,7 @@ def play_hand(conn, p1_bank, p2_bank, hand_num):
     mirror(conn,
            f"\n  ── Showdown ──\n"
            f"  You: {p1_hole[0]}, {p1_hole[1]}  →  {plib.possible_hands[p1_best[0]]}\n"
-           f"  Opponent: {p2_hole[0]}, {p2_hole[1]}  →  {plib.possible_hands[p2_best[0]]}",
-           f"\n  ── Showdown ──\n"
+           f"  Opponent: {p2_hole[0]}, {p2_hole[1]}  →  {plib.possible_hands[p2_best[0]]}",f"\n  ── Showdown ──\n"
            f"  You: {p2_hole[0]}, {p2_hole[1]}  →  {plib.possible_hands[p2_best[0]]}\n"
            f"  Opponent: {p1_hole[0]}, {p1_hole[1]}  →  {plib.possible_hands[p1_best[0]]}")
 
