@@ -3,7 +3,7 @@ from socket32 import create_new_socket
 import poker_lib as plib
 import random
 
-HOST        = '0.0.0.0'
+HOST        = '127.0.0.1'
 PORT        = 65444
 
 # THESE VALUES CAN BE CHANGED, DEPENDING ON HOW YOU WANT TO STRUCTURE THE GAME
